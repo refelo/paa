@@ -40,3 +40,7 @@ jobs:
           & "$source/install.ps1" -Project "$PWD/.local/ci/consumer" -Action uninstall
           & "$source/install.ps1" -Project "$PWD/.local/ci/consumer" -PackagePath $source -Aesthetics disable -NonInteractive
           python scripts/check_mcp.py --target .local/ci/consumer
+      - name: Fresh choice installs and synthetic image MCP checks
+        run: |
+          python -m pip download --only-binary=:all: -r requirements.lock --dest .local/ci/wheels
+          python scripts/check_local_install.py --wheelhouse .local/ci/wheels
