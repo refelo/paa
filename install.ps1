@@ -27,12 +27,26 @@ foreach ($globalDirectory in @('.codex','.agents')) {
 }
 $ancestor = $projectPath
 while ($ancestor) {
+    if ([IO.Path]::GetExtension($ancestor.TrimEnd('\')) -eq '.library') {
+        throw 'A project cannot be installed inside an Eagle library.'
+    }
     if ((Test-Path -LiteralPath $ancestor) -and
         ((Get-Item -Force -LiteralPath $ancestor).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw 'Installation targets cannot traverse symbolic links or junctions.'
     }
     $parent = [IO.Directory]::GetParent($ancestor)
     $ancestor = if ($parent) { $parent.FullName } else { $null }
+}
+if ($Library) {
+    $libraryPath = [IO.Path]::GetFullPath($Library)
+    if ([IO.Path]::GetExtension($libraryPath.TrimEnd('\')) -ne '.library' -or
+        -not (Test-Path -LiteralPath (Join-Path $libraryPath 'images') -PathType Container)) {
+        throw 'Explicit Eagle library is not readable.'
+    }
+    if ($projectPath.TrimEnd('\') -eq $libraryPath.TrimEnd('\') -or
+        $projectPath.StartsWith($libraryPath.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Installation cannot write inside its source library.'
+    }
 }
 New-Item -ItemType Directory -Path $projectPath -Force | Out-Null
 $receiptPath = Join-Path $projectPath '.local/install/receipt.json'

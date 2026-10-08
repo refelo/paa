@@ -100,11 +100,25 @@ def server_config(runtime, target):
                     'PAA_RELEASE': runtime.get('source_sha256', 'development')[:20]}}
 
 
+def selected_library(library, target):
+    if library is None:
+        return None
+    selected = Path(library).absolute()
+    safe_path(selected, '.')
+    if selected.suffix.lower() != '.library' or not (selected / 'images').is_dir():
+        raise ValueError('Explicit Eagle library is not readable')
+    if target.is_relative_to(selected):
+        raise ValueError('Installation cannot write inside its source library')
+    return selected
+
+
 class LocalInstallation:
     def __init__(self, source, target):
         self.source = Path(source).resolve(strict=True)
         self.target = Path(target).absolute()
         safe_path(self.target, '.')
+        if any(path.suffix.lower() == '.library' for path in (self.target, *self.target.parents)):
+            raise ValueError('A project cannot be installed inside an Eagle library')
         if (self.target == Path.home().absolute() or self.target == Path(self.target.anchor)
                 or any(self.target.is_relative_to(Path.home() / name) for name in ('.codex', '.agents'))):
             raise ValueError('Choose a project directory, not a global configuration directory')
@@ -121,7 +135,8 @@ class LocalInstallation:
             raise ValueError('Installation receipt belongs to another target')
         return receipt
 
-    def preflight(self):
+    def preflight(self, *, library=None):
+        selected_library(library, self.target)
         if self.pending.exists():
             raise ValueError('Interrupted installation; run recover before continuing')
         old = self.receipt()
@@ -198,8 +213,9 @@ class LocalInstallation:
     def install(self, runtime, *, aesthetics=None, library=None, allow_preview=False):
         if aesthetics not in (None, 'enable', 'disable'):
             raise ValueError('Aesthetics must be an explicit enable or disable choice')
+        self.preflight(library=library)
         with file_lock(safe_path(self.target, '.local/.maintenance.lock')):
-            old, original = self.preflight()
+            old, original = self.preflight(library=library)
             verify_runtime(runtime, self.target)
             choice = aesthetics if aesthetics is not None else (old or {}).get('aesthetics', 'unanswered')
             enabled = choice == 'enable'
@@ -287,12 +303,7 @@ class LocalInstallation:
         if Path(settings['card_store']) != store_root:
             raise ValueError('Managed card store path changed; refusing to manage another store')
         if library is not None:
-            selected = Path(library).absolute()
-            safe_path(selected, '.')
-            if selected.suffix.lower() != '.library' or not (selected / 'images').is_dir():
-                raise ValueError('Explicit Eagle library is not readable')
-            if self.target.is_relative_to(selected):
-                raise ValueError('Installation cannot write inside its source library')
+            selected = selected_library(library, self.target)
             if old and settings.get('library') and Path(settings['library']) != selected:
                 raise ValueError('Library changes need a separate target; old index and notes were preserved')
             settings['library'] = str(selected)

@@ -1,4 +1,5 @@
 from contextlib import ExitStack
+import importlib.util
 from pathlib import Path
 import re
 import tempfile
@@ -259,6 +260,31 @@ class InstallTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'escaped'):
             from paa.installation import safe_path
             safe_path(self.target, '../elsewhere')
+
+    def test_project_cannot_be_inside_an_eagle_library(self):
+        library = Path(self.tmp.name) / 'original.library'
+        (library / 'images').mkdir(parents=True)
+        target = library / 'nested-project'
+        with self.assertRaisesRegex(ValueError, 'library'):
+            LocalInstallation(self.source, target)
+        self.assertFalse(target.exists())
+        self.assertFalse((library / '.local').exists())
+
+    def test_invalid_library_is_rejected_before_first_target_write(self):
+        with self.assertRaisesRegex(ValueError, 'library'):
+            self.installer.install(self.runtime, library=Path(self.tmp.name) / 'missing.library')
+        self.assertFalse(self.target.exists())
+
+    def test_build_temporary_files_belong_to_target_project(self):
+        spec = importlib.util.spec_from_file_location('paa_installer_temp_test', ROOT / 'scripts/manage_install.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with patch.object(module.subprocess, 'run') as run:
+            module.run(['python', '-V'], cwd=self.target, project=self.target)
+        environment = run.call_args.kwargs['env']
+        for key in ('TMP', 'TEMP', 'PIP_CACHE_DIR'):
+            self.assertTrue(Path(environment[key]).is_relative_to(self.target), key)
+        self.assertNotIn('PYTHONPATH', environment)
 
     def test_local_maintenance_default_and_explicit_cloud_preflight(self):
         from paa.automation import main

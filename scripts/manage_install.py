@@ -7,17 +7,18 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT))
 
 from paa.installation import LocalInstallation, build_runtime  # noqa: E402
 
 
-def run(command, *, cwd):
-    temporary = ROOT / '.local/install-build/tmp'
+def run(command, *, cwd, project):
+    temporary = project / '.local/install-build/tmp'
     temporary.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, PYTHONUTF8='1', PYTHONNOUSERSITE='1',
                TMP=str(temporary), TEMP=str(temporary), PIP_DISABLE_PIP_VERSION_CHECK='1',
-               PIP_CACHE_DIR=str(ROOT / '.local/install-build/cache'))
+               PIP_CACHE_DIR=str(project / '.local/install-build/cache'))
     env.pop('PYTHONPATH', None)
     subprocess.run(command, cwd=cwd, env=env, check=True)
 
@@ -35,9 +36,11 @@ def main(argv=None):
     target = args.target.absolute()
     installer = LocalInstallation(ROOT, target)
     if args.action == 'install':
-        installer.preflight()
+        installer.preflight(library=args.library)
         target.mkdir(parents=True, exist_ok=True)
-        runtime = build_runtime(ROOT, target, run=run, wheelhouse=args.wheelhouse)
+        def execute(command, *, cwd):
+            run(command, cwd=cwd, project=target)
+        runtime = build_runtime(ROOT, target, run=execute, wheelhouse=args.wheelhouse)
         result = installer.install(runtime, aesthetics=args.aesthetics, library=args.library,
                                    allow_preview=args.allow_preview)
     elif args.action in ('recover', 'uninstall', 'rollback'):
