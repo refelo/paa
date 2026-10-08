@@ -13,6 +13,10 @@ from mcp.client.stdio import stdio_client
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def print_summary(summary):
+    print(json.dumps(summary, ensure_ascii=True))
+
+
 def unpack(result):
     if result.isError:
         raise RuntimeError('MCP check returned an error: ' + str(result.content))
@@ -83,7 +87,7 @@ async def check(target, image_id=None):
                                image_evidence=str(evidence), asset_id=row['asset_id'])
             summary['seconds'] = round(time.perf_counter() - started, 2)
             (output / 'mcp-check.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-            print(json.dumps(summary, ensure_ascii=False))
+            print_summary(summary)
             return summary
 
 

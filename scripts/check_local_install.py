@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from check_mcp import check  # noqa: E402
+from check_mcp import check, print_summary  # noqa: E402
 from paa.cards import read, save  # noqa: E402
 from paa.installation import LocalInstallation, build_runtime  # noqa: E402
 
@@ -88,7 +88,7 @@ def main():
     except Exception as error:
         save(directory / 'acceptance.json', {'ok': False, 'results': results, 'error': repr(error)})
         raise
-    print(json.dumps({'ok': True, 'report': str(directory / 'acceptance.json')}, ensure_ascii=False))
+    print_summary({'ok': True, 'report': str(directory / 'acceptance.json')})
 
 
 if __name__ == '__main__':
