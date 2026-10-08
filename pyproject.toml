@@ -1,0 +1,29 @@
+[project]
+name = "paa-search"
+version = "0.0.1"
+description = "Global reference retrieval with workspace-local maintenance"
+requires-python = ">=3.14,<3.15"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+  "mcp>=1.27,<2",
+  "numpy>=2,<3",
+  "Pillow>=12,<13",
+]
+
+[project.optional-dependencies]
+cloud = ["fastmcp==3.4.8"]
+media = ["av>=17,<18", "faster-whisper>=1.2,<2"]
+
+[project.scripts]
+paa = "paa.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["paa*"]
+
+[tool.setuptools.package-data]
+paa = ["*.html"]

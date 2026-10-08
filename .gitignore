@@ -1,0 +1,21 @@
+# Private instance data, credentials and generated artifacts
+/.local/
+/.codex/config.toml
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.log
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+.DS_Store
+Thumbs.db
+Desktop.ini

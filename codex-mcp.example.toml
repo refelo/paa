@@ -1,0 +1,13 @@
+# Template only. The installer generates concrete paths in its isolated target.
+# Project-scoped configuration; do not overwrite an existing global PAA.
+[mcp_servers.paa_public]
+command = 'C:\path\to\python.exe'
+args = ['-I', '-X', 'utf8', '-u', '-m', 'paa', 'serve']
+cwd = 'C:\path\to\isolated-target'
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+
+[mcp_servers.paa_public.env]
+PAA_WORKSPACE = 'C:\path\to\isolated-target'
+PYTHONUTF8 = '1'
+PYTHONUNBUFFERED = '1'

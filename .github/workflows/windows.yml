@@ -1,0 +1,42 @@
+name: Windows preview checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.14'
+      - name: Install locked dependencies and lint tool
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip install ruff==0.15.12
+      - name: Source and behavior checks
+        run: |
+          python -m ruff check paa scripts tests
+          python scripts/check_isolated_tests.py
+      - name: Download exact commit and test consumer install
+        shell: pwsh
+        env:
+          TESTED_COMMIT: ${{ github.sha }}
+          TESTED_REPOSITORY: ${{ github.repository }}
+        run: |
+          New-Item -ItemType Directory -Path .local/ci -Force | Out-Null
+          Invoke-WebRequest "https://api.github.com/repos/$env:TESTED_REPOSITORY/zipball/$env:TESTED_COMMIT" -OutFile .local/ci/source.zip
+          Expand-Archive .local/ci/source.zip .local/ci/download
+          $source = (Get-ChildItem .local/ci/download -Directory | Select-Object -First 1).FullName
+          & "$source/install.ps1" -Project "$PWD/.local/ci/consumer" -PackagePath $source -NonInteractive
+          python scripts/check_mcp.py --target .local/ci/consumer
+          & "$source/install.ps1" -Project "$PWD/.local/ci/consumer" -Action uninstall
+          & "$source/install.ps1" -Project "$PWD/.local/ci/consumer" -PackagePath $source -Aesthetics disable -NonInteractive
+          python scripts/check_mcp.py --target .local/ci/consumer

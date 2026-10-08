@@ -1,0 +1,2 @@
+# Keep content-manifest hashes stable after checkout on Windows and other systems.
+* text=auto eol=lf

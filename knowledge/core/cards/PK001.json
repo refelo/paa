@@ -1,0 +1,35 @@
+{
+  "id": "PK001",
+  "kind": "technique",
+  "title": "把参考画面的关系放回当前条件",
+  "author": "PAA项目（refelo，Agent辅助编写）",
+  "problem": "搜到相似参考后仍需判断如何用于当前场地",
+  "method": [
+    "先查看候选图片，描述主体、背景、光线和空间之间可见的关系",
+    "对照当前场地和资源，选一项可调整关系做小样比较"
+  ],
+  "conditions": [
+    "已取得实际参考图片，并知道当前拍摄或创作条件"
+  ],
+  "limits": [
+    "候选相似度不是适用结论",
+    "不可把外观推测写成真实EXIF或作者意图"
+  ],
+  "agent_notes": [
+    "项目原创入门示例，不是课程归纳或个人审美标准"
+  ],
+  "visual_dependency": "required",
+  "status": "active",
+  "revision": 1,
+  "source_refs": [
+    {
+      "source_id": "paa-public-starter-v0.0.1",
+      "line_start": 5,
+      "line_end": 7,
+      "source_sha256": "8963fa285f63e1d3d948f85086bdb9aa71b2b240c8d38a7b9374e3c7fdc3485e",
+      "title": "PAA public starter: original project examples",
+      "time_start": "not applicable",
+      "time_end": "not applicable"
+    }
+  ]
+}

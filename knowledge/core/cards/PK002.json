@@ -1,0 +1,35 @@
+{
+  "id": "PK002",
+  "kind": "technique",
+  "title": "以稳定编号延续同图追问",
+  "author": "PAA项目（refelo，Agent辅助编写）",
+  "problem": "用户指向上一轮展示的某张参考图时需要保持身份一致",
+  "method": [
+    "记录展示编号到asset_id的对应",
+    "按asset_id重新取图并核对当前context后再继续分析"
+  ],
+  "conditions": [
+    "已有实际展示的图片与工具返回的稳定编号"
+  ],
+  "limits": [
+    "图像身份失效时不得猜测替代文件",
+    "只有路径或成功消息不能算Agent已经看图"
+  ],
+  "agent_notes": [
+    "项目原创工具使用示例，没有视频来源或作者偏好推断"
+  ],
+  "visual_dependency": "required",
+  "status": "active",
+  "revision": 1,
+  "source_refs": [
+    {
+      "source_id": "paa-public-starter-v0.0.1",
+      "line_start": 9,
+      "line_end": 11,
+      "source_sha256": "8963fa285f63e1d3d948f85086bdb9aa71b2b240c8d38a7b9374e3c7fdc3485e",
+      "title": "PAA public starter: original project examples",
+      "time_start": "not applicable",
+      "time_end": "not applicable"
+    }
+  ]
+}

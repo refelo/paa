@@ -1,0 +1,10 @@
+{
+  "library": "C:\\path\\to\\your-authorized.library",
+  "allow_preview_to_agent": false,
+  "embedding_model": "voyage-multimodal-3.5",
+  "index_dir": "C:\\path\\to\\your-workspace\\.local\\runtime",
+  "card_store": "C:\\path\\to\\your-workspace\\.local\\data\\cards",
+  "allow_paid_api": false,
+  "query_online_default": false,
+  "budget_usd": 0
+}

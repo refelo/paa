@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PAA 参考图</title>
+<style>
+*{box-sizing:border-box}html,body{height:auto;overflow:visible}body{margin:0;padding:14px;font:14px/1.5 system-ui,sans-serif;color:var(--color-text-primary,#202020);background:var(--color-background-primary,#fff)}
+header{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}h1{font-size:17px;margin:0}#status{font-size:12px;color:var(--color-text-secondary,#666)}
+#gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+figure{margin:0;border:1px solid #d7d7d7;border-radius:10px;overflow:hidden}img{display:block;width:100%;height:auto}figcaption{padding:10px 12px;font-size:14px}
+.image-button{display:block;width:100%;padding:0;border:0;background:transparent;cursor:zoom-in}.image-button:focus-visible{outline:3px solid #397cf6;outline-offset:-3px}.number{display:block;font-size:12px;color:var(--color-text-secondary,#666);margin-bottom:4px}
+[hidden]{display:none!important}#viewer{display:grid;gap:12px}#back{justify-self:start;padding:9px 14px;border:1px solid #bbb;border-radius:8px;font:inherit;color:inherit;background:var(--color-background-primary,#fff);cursor:pointer}#large-image{width:auto;max-width:100%;max-height:calc(100dvh - 140px);object-fit:contain;justify-self:center}#view-caption{margin:0}.viewer-open header,.viewer-open #gallery{display:none}
+</style>
+</head>
+<body>
+<header><h1>参考图</h1><span id="status">正在接收图片…</span></header>
+<main id="gallery" aria-label="参考图片列表"></main>
+<section id="viewer" aria-label="参考大图" hidden>
+  <button id="back" type="button">返回参考图</button>
+  <img id="large-image" alt="">
+  <p id="view-caption"></p>
+</section>
+<script>
+const gallery=document.getElementById('gallery'), status=document.getElementById('status');
+const viewer=document.getElementById('viewer'),largeImage=document.getElementById('large-image'),viewCaption=document.getElementById('view-caption');
+let initialized=false,lastSize='',shownKey='',hostContext={},selected=null,returnFocus=null,returnScroll=0;
+const pending=new Map();let sequence=1;
+function notify(method,params){window.parent.postMessage({jsonrpc:'2.0',method,params},'*');}
+function request(method,params){const id=sequence++;return new Promise((resolve,reject)=>{pending.set(id,{resolve,reject});window.parent.postMessage({jsonrpc:'2.0',id,method,params},'*');});}
+function resize(){if(hostContext.displayMode==='fullscreen')return;const size={width:document.documentElement.clientWidth,height:Math.ceil(document.body.scrollHeight)};const key=JSON.stringify(size);if(key!==lastSize){lastSize=key;if(typeof window.openai?.notifyIntrinsicHeight==='function')window.openai.notifyIntrinsicHeight(size.height);if(initialized)notify('ui/notifications/size-changed',size);}}
+function applyContext(context){const previousMode=hostContext.displayMode;hostContext={...hostContext,...context};if(context?.theme)document.documentElement.style.colorScheme=context.theme;for(const [key,value] of Object.entries(context?.styles?.variables||{})){if(key.startsWith('--')&&typeof value==='string')document.documentElement.style.setProperty(key,value);}if(previousMode==='fullscreen'&&context?.displayMode==='inline'&&selected)restoreGallery();}
+async function displayMode(mode){try{let result;if(initialized&&hostContext.availableDisplayModes?.includes(mode))result=await request('ui/request-display-mode',{mode});else if(typeof window.openai?.requestDisplayMode==='function')result=await window.openai.requestDisplayMode({mode});if(result?.mode)hostContext.displayMode=result.mode;}catch{}resize();}
+function openPicture(picture,button){selected=picture;returnFocus=button;returnScroll=window.scrollY;viewer.hidden=false;document.body.classList.add('viewer-open');largeImage.src=picture.large_image_url||picture.image_url;largeImage.alt='第 '+picture.number+' 张参考图';viewCaption.textContent='第 '+picture.number+' 张 · '+(picture.caption||'');displayMode('fullscreen');document.getElementById('back').focus();resize();}
+function restoreGallery(){selected=null;viewer.hidden=true;document.body.classList.remove('viewer-open');lastSize='';resize();window.scrollTo(0,returnScroll);returnFocus?.focus({preventScroll:true});}
+function closePicture(){restoreGallery();displayMode('inline');}
+document.getElementById('back').onclick=closePicture;largeImage.onload=resize;window.addEventListener('keydown',event=>{if(event.key==='Escape'&&selected)closePicture();});
+function render(output,metadata){
+  if(!output?.pictures?.length)return;
+  const wrapped=metadata?.mcp_tool_result||metadata?.call_tool_result||metadata;
+  const hidden=wrapped?._meta||wrapped?.meta||wrapped;
+  const sources=new Map((hidden?.gallery||[]).map(x=>[x.image_id,x.data_uri]));
+  const key=JSON.stringify(output.pictures.map(p=>[p.image_id,p.caption,sources.has(p.image_id),p.image_url]));
+  if(key===shownKey)return;shownKey=key;gallery.replaceChildren();
+  output.pictures.forEach((picture,index)=>{
+    const source=sources.get(picture.image_id)||picture.image_url;
+    if(typeof source!=='string'||(!source.startsWith('data:image/jpeg;base64,')&&!source.startsWith('https://')))return;
+    const figure=document.createElement('figure'),button=document.createElement('button'),img=document.createElement('img'),caption=document.createElement('figcaption'),number=document.createElement('span');
+    picture={...picture,number:picture.number||index+1};button.type='button';button.className='image-button';button.setAttribute('aria-label','放大第 '+picture.number+' 张');button.onclick=()=>openPicture(picture,button);
+    img.src=source;img.alt='参考图 '+picture.image_id;img.onload=resize;img.onerror=()=>{status.textContent='有图片未能加载，请按原编号重新取图';};
+    number.className='number';number.textContent='第 '+picture.number+' 张 · 点击放大';caption.append(number,document.createTextNode(picture.caption||''));button.append(img);figure.append(button,caption);gallery.append(figure);
+  });
+  status.textContent=gallery.children.length+' 张';resize();
+}
+function compatibilityRender(){const api=window.openai;if(api)render(api.toolOutput,api.toolResponseMetadata);}
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent)return;const message=event.data;if(!message||message.jsonrpc!=='2.0')return;
+  if(message.id!==undefined&&pending.has(message.id)){const item=pending.get(message.id);pending.delete(message.id);message.error?item.reject(message.error):item.resolve(message.result);return;}
+  if(message.method==='ui/notifications/tool-result')render(message.params?.structuredContent,message.params);
+  if(message.method==='ui/notifications/host-context-changed'){applyContext(message.params);resize();}
+  if(message.method==='ui/resource-teardown'&&message.id!==undefined)window.parent.postMessage({jsonrpc:'2.0',id:message.id,result:{}},'*');
+});
+window.addEventListener('openai:set_globals',compatibilityRender);
+new ResizeObserver(resize).observe(document.body);
+compatibilityRender();
+request('ui/initialize',{protocolVersion:'2026-01-26',appInfo:{name:'paa-reference-gallery',version:'0.1.0'},appCapabilities:{availableDisplayModes:['inline','fullscreen']}}).then(result=>{
+  initialized=true;lastSize='';applyContext(result?.hostContext);notify('ui/notifications/initialized',{});resize();compatibilityRender();
+}).catch(error=>{compatibilityRender();if(!gallery.children.length)status.textContent='图片连接失败：'+(error?.message||'请重新打开对话');});
+</script>
+</body>
+</html>

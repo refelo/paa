@@ -1,0 +1,27 @@
+{
+  "version": "public-starter-0.0.1",
+  "status": "public-development-preview",
+  "core_count": 2,
+  "optional_aesthetics_count": 0,
+  "license": "CC-BY-4.0",
+  "cards": [
+    {
+      "id": "PK001",
+      "kind": "technique",
+      "title": "把参考画面的关系放回当前条件",
+      "path": "knowledge/core/cards/PK001.json",
+      "sha256": "06027ba1a3d95a0b6819655a377e015b79a9df210e45a80172c97020af2225e1",
+      "license": "CC-BY-4.0",
+      "source_scope": "original project example"
+    },
+    {
+      "id": "PK002",
+      "kind": "technique",
+      "title": "以稳定编号延续同图追问",
+      "path": "knowledge/core/cards/PK002.json",
+      "sha256": "896db994c2002e3bde7478472f824884628b4bbbde61ea7c85d5432450276592",
+      "license": "CC-BY-4.0",
+      "source_scope": "original project example"
+    }
+  ]
+}
